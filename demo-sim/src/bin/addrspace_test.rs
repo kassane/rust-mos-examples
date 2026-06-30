@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Matheus C. França
+// SPDX-License-Identifier: Apache-2.0
+//! Simulator address-space ABI test: validates pointer/ABI alignment.
+
 #![no_std]
 #![no_main]
 

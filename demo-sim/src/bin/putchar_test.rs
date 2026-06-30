@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Matheus C. França
+// SPDX-License-Identifier: Apache-2.0
+//! Simulator putchar test: prints "Hello!" and exits.
+
 #![no_std]
 #![no_main]
 

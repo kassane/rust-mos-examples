@@ -2,3 +2,55 @@
 name = "demo-nes"
 version = "0.1.0"
 edition = "2024"
+
+[[bin]]
+name = "nes-unrom-hello"
+path = "src/bin/nes-unrom-hello.rs"
+
+[[bin]]
+name = "nes-unrom-color-cycle"
+path = "src/bin/nes-unrom-color-cycle.rs"
+
+[[bin]]
+name = "nes-cnrom-hello"
+path = "src/bin/nes-cnrom-hello.rs"
+
+[[bin]]
+name = "nes-cnrom-sprites"
+path = "src/bin/nes-cnrom-sprites.rs"
+
+[[bin]]
+name = "nes-mmc1-hello"
+path = "src/bin/nes-mmc1-hello.rs"
+
+[[bin]]
+name = "nes-mmc1-sprites"
+path = "src/bin/nes-mmc1-sprites.rs"
+
+[[bin]]
+name = "nes-mmc3-hello"
+path = "src/bin/nes-mmc3-hello.rs"
+
+[[bin]]
+name = "nes-mmc3-pads"
+path = "src/bin/nes-mmc3-pads.rs"
+
+[[bin]]
+name = "nes-gtrom-hello"
+path = "src/bin/nes-gtrom-hello.rs"
+
+[[bin]]
+name = "nes-gtrom-color-cycle"
+path = "src/bin/nes-gtrom-color-cycle.rs"
+
+[[bin]]
+name = "nes-unrom-512-hello"
+path = "src/bin/nes-unrom-512-hello.rs"
+
+[[bin]]
+name = "nes-action53-hello"
+path = "src/bin/nes-action53-hello.rs"
+
+[[bin]]
+name = "nes-nrom-hello"
+path = "src/bin/nes-nrom-hello.rs"

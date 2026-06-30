@@ -2,3 +2,28 @@
 name = "demo-mega65"
 version = "0.1.0"
 edition = "2024"
+publish = false
+
+[dependencies]
+
+[[bin]]
+name = "mega65-hello"
+path = "src/bin/mega65-hello.rs"
+
+[[bin]]
+name = "mega65-viciv"
+path = "src/bin/mega65-viciv.rs"
+
+[[bin]]
+name = "mega65-plasma"
+path = "src/bin/mega65-plasma.rs"
+
+[[bin]]
+name = "mega65-mandelbrot"
+path = "src/bin/mega65-mandelbrot.rs"
+
+[[bin]]
+name = "mega65-vector-logo"
+path = "src/bin/mega65-vector-logo.rs"
+
+

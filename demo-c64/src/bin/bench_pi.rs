@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Matheus C. França
+// SPDX-License-Identifier: Apache-2.0
+//! C64 pi digits benchmark.
+
 #![no_std]
 #![no_main]
 
@@ -24,7 +28,9 @@ fn pi_digits(digits: usize) {
         let mut sum: i32 = 0;
         let mut j = i;
         while j > 0 {
-            sum = sum.wrapping_mul(j as i32).wrapping_add(SCALE.wrapping_mul(unsafe { ARR[j] }));
+            sum = sum
+                .wrapping_mul(j as i32)
+                .wrapping_add(SCALE.wrapping_mul(unsafe { ARR[j] }));
             unsafe {
                 ARR[j] = sum % ((j * 2 - 1) as i32);
             }
@@ -35,7 +41,9 @@ fn pi_digits(digits: usize) {
             printf(b"%04d\0".as_ptr(), (CARRY.wrapping_add(sum / SCALE)) as i32);
             CARRY = sum % SCALE;
         }
-        if i < 14 { break; }
+        if i < 14 {
+            break;
+        }
         i -= 14;
     }
 }

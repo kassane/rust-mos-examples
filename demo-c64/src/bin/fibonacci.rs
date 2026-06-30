@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Matheus C. França
+// SPDX-License-Identifier: Apache-2.0
+//! C64 Fibonacci: computes and displays Fibonacci sequence.
+
 #![no_std]
 #![no_main]
 

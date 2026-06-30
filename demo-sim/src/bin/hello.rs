@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Matheus C. França
+// SPDX-License-Identifier: Apache-2.0
+//! Simulator hello: prints Fibonacci sequence via putchar at $FFF9.
+
 #![no_std]
 #![no_main]
 
