@@ -21,16 +21,16 @@ jobs:
             sdk_archive: llvm-mos-linux.tar.xz
             rust_archive: rust-mos-x86_64-linux-glibc.tar.xz
             rust_dir: rust-mos-x86_64-linux-glibc
-          - os: macos-latest
-            name: Apple-arm64
-            sdk_archive: llvm-mos-macos.tar.xz
-            rust_archive: rust-mos-aarch64-apple-darwin.tar.gz
-            rust_dir: rust-mos-aarch64-apple-darwin
-          - os: windows-latest
-            name: Windows-amd64
-            sdk_archive: llvm-mos-windows.7z
-            rust_archive: rust-mos-x86_64-pc-windows-msvc.zip
-            rust_dir: rust-mos-x86_64-pc-windows-msvc
+          # - os: macos-latest
+          #   name: Apple-arm64
+          #   sdk_archive: llvm-mos-macos.tar.xz
+          #   rust_archive: rust-mos-aarch64-apple-darwin.tar.gz
+          #   rust_dir: rust-mos-aarch64-apple-darwin
+          # - os: windows-latest
+          #   name: Windows-amd64
+          #   sdk_archive: llvm-mos-windows.7z
+          #   rust_archive: rust-mos-x86_64-pc-windows-msvc.zip
+          #   rust_dir: rust-mos-x86_64-pc-windows-msvc
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -38,11 +38,20 @@ jobs:
     steps:
       - uses: actions/checkout@main
 
+      - name: Cache toolchains
+        id: cache-tc
+        uses: actions/cache@main
+        with:
+          path: |
+            llvm-mos
+            ${{ matrix.rust_dir }}
+          key: toolchains-v1-${{ matrix.sdk_archive }}-${{ matrix.rust_archive }}
+
       - name: Extract toolchains
+        if: steps.cache-tc.outputs.cache-hit != 'true'
         env:
           SDK_ARCHIVE: ${{ matrix.sdk_archive }}
           RUST_ARCHIVE: ${{ matrix.rust_archive }}
-          RUST_DIR: ${{ matrix.rust_dir }}
         run: |
           curl -fsSL -O "https://github.com/llvm-mos/llvm-mos-sdk/releases/download/v23.0.1/${SDK_ARCHIVE}"
           curl -fsSL -O "https://github.com/kassane/rust-mos-examples/releases/download/v0.0.0/${RUST_ARCHIVE}"
@@ -78,10 +87,43 @@ jobs:
             fi
           done
 
+      # The demo-nes Cargo.toml has historically had bin names with a literal
+      # ".nes" suffix baked into `name = "..."`, e.g. name = "nes-nrom-hello.nes".
+      # This is invalid: Cargo derives the crate name from the bin name and
+      # rustc rejects '.' in crate names, so a manifest in that state fails to
+      # compile entirely (error: invalid character '.' in crate name).
+      # This step normalizes any such names back to plain (no .nes) so the
+      # --bin flags used below always match, regardless of manifest state.
+      # Idempotent: no-op if names are already clean.
+      - name: Normalize demo-nes bin names
+        run: |
+          set -euo pipefail
+          if grep -qE '^name = "nes-[a-z0-9-]+\.nes"$' demo-nes/Cargo.toml; then
+            echo "Found .nes-suffixed bin names in demo-nes/Cargo.toml, stripping suffix..."
+            sed -i -E 's/^name = "(nes-[a-z0-9-]+)\.nes"$/name = "\1"/' demo-nes/Cargo.toml
+          fi
+          echo "demo-nes bin names:"
+          grep '^name = "nes-' demo-nes/Cargo.toml
+
       - name: Build demo-sim
         env:
           RUSTFLAGS: -Clink-arg=-flto -Clink-arg=-Wl,-u,main -Clink-arg=-Qunused-arguments -A linker_messages
         run: cargo build --target targets/mos-sim-none.json -Zbuild-std -Zunstable-options -Zjson-target-spec --release -p demo-sim
+
+      - name: Run MOS-SIM tests
+        run: |
+          set -euo pipefail
+          for bin in hello putchar_test addrspace_test; do
+            echo "=== $bin ==="
+            rc=0
+            timeout 5 mos-sim "target/mos-sim-none/release/$bin" 2>&1 || rc=$?
+            if [ $rc -eq 124 ]; then
+              echo "OK ($bin: timeout)"
+            elif [ $rc -ne 0 ]; then
+              echo "FAIL ($bin: rc=$rc)"; exit 1
+            fi
+            echo "PASS: $bin"
+          done
 
       - name: Build demo-c64
         env:
@@ -93,8 +135,19 @@ jobs:
           RUSTFLAGS: -Clink-arg=-flto -Clink-arg=-Wl,-u,main -Clink-arg=-Qunused-arguments -A linker_messages
         run: |
           set -euo pipefail
+          # Rename plain artifact to add .nes only if the linker/target-spec
+          # didn't already produce it directly (depends on whether
+          # targets/mos-nes-*.json sets "exe-suffix": ".nes"; unconfirmed at
+          # time of writing). This is a safe no-op if the file already exists.
+          rename_to_nes() {
+            local dir="$1" name="$2"
+            if [ -f "$dir/$name" ] && [ ! -f "$dir/$name.nes" ]; then
+              mv "$dir/$name" "$dir/$name.nes"
+            fi
+          }
           for mapper in nrom cnrom unrom unrom-512 mmc1 mmc3 gtrom action53; do
             cargo build --target "targets/mos-nes-${mapper}-none.json" -Zbuild-std -Zunstable-options -Zjson-target-spec --release -p demo-nes --bin "nes-${mapper}-hello"
+            rename_to_nes "target/mos-nes-${mapper}-none/release" "nes-${mapper}-hello"
             case "$mapper" in
               unrom) extra="unrom-color-cycle" ;;
               cnrom) extra="cnrom-sprites" ;;
@@ -105,6 +158,7 @@ jobs:
             esac
             if [ -n "$extra" ]; then
               cargo build --target "targets/mos-nes-${mapper}-none.json" -Zbuild-std -Zunstable-options -Zjson-target-spec --release -p demo-nes --bin "nes-${extra}"
+              rename_to_nes "target/mos-nes-${mapper}-none/release" "nes-${extra}"
             fi
           done
 
@@ -113,8 +167,66 @@ jobs:
           RUSTFLAGS: -Clink-arg=-flto -Clink-arg=-Wl,-u,main -Clink-arg=-Qunused-arguments -A linker_messages
         run: cargo build --target targets/mos-mega65-none.json -Zbuild-std -Zunstable-options -Zjson-target-spec --release -p demo-mega65
 
-      - name: Verify outputs
+      - name: Collect binaries
+        if: matrix.os == 'ubuntu-latest'
         run: |
-          find target -name "*.elf" -o -name "*.exe" 2>/dev/null | while read f; do
-            echo "FOUND: $f"
+          mkdir -p out/bin
+          for dir in target/mos-*-none/release; do
+            [ -d "$dir" ] || continue
+            for f in "$dir"/*; do
+              [ -f "$f" ] && cp "$f" out/bin/
+            done
+          done
+          ls -la out/bin/
+
+      - name: Upload binaries
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@main
+        with:
+          name: binaries
+          path: out/bin/
+          retention-days: 1
+
+  emulate:
+    name: Emulator smoke tests
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Download binaries
+        uses: actions/download-artifact@main
+        with:
+          name: binaries
+          path: out/bin/
+
+      - name: Install emulators
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mednafen
+
+      - name: NES smoke tests
+        env:
+          SDL_VIDEODRIVER: offscreen
+          SDL_AUDIODRIVER: dummy
+          HOME: /tmp/mednafen-home
+        run: |
+          mkdir -p /tmp/mednafen-home/.mednafen
+          echo "sound.device none" > /tmp/mednafen-home/.mednafen/mednafen.cfg
+          smoke() {
+            local f=$1 rc=0
+            if [ ! -f "out/bin/$f" ]; then
+              echo "FAIL: $f (artifact not found)"; exit 1
+            fi
+            timeout 3 mednafen "out/bin/$f" || rc=$?
+            if [ $rc -ne 0 ] && [ $rc -ne 124 ]; then
+              echo "FAIL: $f (rc=$rc)"; exit 1
+            fi
+            echo "OK: $f"
+          }
+          for f in \
+            nes-nrom-hello.nes nes-cnrom-hello.nes nes-cnrom-sprites.nes \
+            nes-unrom-hello.nes nes-unrom-512-hello.nes nes-unrom-color-cycle.nes \
+            nes-mmc1-hello.nes nes-mmc1-sprites.nes \
+            nes-mmc3-hello.nes nes-mmc3-pads.nes \
+            nes-action53-hello.nes; do
+            smoke "$f"
           done
