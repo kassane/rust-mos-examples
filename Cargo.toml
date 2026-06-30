@@ -1,0 +1,8 @@
+[workspace]
+resolver = "2"
+members = ["demo-sim", "demo-c64", "demo-nes", "demo-mega65", "tools"]
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+panic = "abort"

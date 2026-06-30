@@ -1,0 +1,16 @@
+[package]
+name = "demo-sim"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "hello"
+path = "src/bin/hello.rs"
+
+[[bin]]
+name = "addrspace_test"
+path = "src/bin/addrspace_test.rs"
+
+[[bin]]
+name = "putchar_test"
+path = "src/bin/putchar_test.rs"

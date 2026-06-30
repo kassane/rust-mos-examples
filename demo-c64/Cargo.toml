@@ -1,0 +1,44 @@
+[package]
+name = "demo-c64"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "hello"
+path = "src/bin/hello.rs"
+
+[[bin]]
+name = "fibonacci"
+path = "src/bin/fibonacci.rs"
+
+[[bin]]
+name = "plasma"
+path = "src/bin/plasma.rs"
+
+[[bin]]
+name = "bench_crc8"
+path = "src/bin/bench_crc8.rs"
+
+[[bin]]
+name = "bench_crc16"
+path = "src/bin/bench_crc16.rs"
+
+[[bin]]
+name = "bench_crc32"
+path = "src/bin/bench_crc32.rs"
+
+[[bin]]
+name = "bench_aes256"
+path = "src/bin/bench_aes256.rs"
+
+[[bin]]
+name = "bench_sieve"
+path = "src/bin/bench_sieve.rs"
+
+[[bin]]
+name = "bench_pi"
+path = "src/bin/bench_pi.rs"
+
+[[bin]]
+name = "bench_fact"
+path = "src/bin/bench_fact.rs"
